@@ -42,14 +42,9 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-args.cuda = args.cuda and torch.cuda.is_available()
-print(args.cuda)
-print(torch.cuda.is_available())
-# 输出 CUDA 状态
-if args.cuda:
-    print("CUDA is enabled.")
-else:
-    print("CUDA is disabled.")
+
+device = torch.device("cuda" if args.cuda and torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
 # 设置随机种子以确保实验结果的可重复性
 np.random.seed(args.seed)
@@ -65,9 +60,9 @@ adj, features, labels, idx_train, idx_val, idx_test = load_data()
 
 # step3：Model and optimizer
 # ps：设置模型参数
-# ? features.shape[1]啥意思？labels.max().item() + 1 啥意思？每个数据各是什么数据类型？
 model = GCN(
-    nfeat=features.shape[1],  # 输入节点的特征维度（即特征矩阵的列数）
+    # 假如 features 是一个 (2708, 1433) 的矩阵（Cora 数据集），那么 features.shape[1] 就是 1433，表示每个节点有 1433 个特征
+    nfeat=features.shape[1],  # 表示特征矩阵的列数，即输入节点的特征维度
     nhid=args.hidden,  # 隐藏层的神经元数量
     nclass=labels.max().item() + 1,  # 分类数（标签的最大值 + 1）
     dropout=args.dropout,  # Dropout 比例
