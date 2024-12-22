@@ -1,0 +1,9 @@
+*.pyc
+
+build
+
+dist
+
+pygcn.egg-info
+
+checkpoints
