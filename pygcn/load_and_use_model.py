@@ -9,14 +9,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--cuda", action="store_true", default=True, help="Enables CUDA!")
 args = parser.parse_args()
 
-print(args.cuda)
-print(torch.cuda.is_available())
-# 输出 CUDA 状态
-if args.cuda and torch.cuda.is_available():
-    print("CUDA is enabled.")
-else:
-    print("CUDA is disabled.")
-
 # step2：加载模型
 model = torch.load("../checkpoints/model.pt")  # 加载整个模型
 model.eval()  # 设置为评估模式
@@ -28,8 +20,7 @@ adj, features, labels, idx_train, idx_val, idx_test = load_data()
 device = torch.device("cuda" if args.cuda and torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
-if args.cuda:
-    print("Migrate the model and data to run on the GPU...")
+if device.type == "cuda":
     model.cuda()
     model = model.to(device)
     adj = adj.to(device)
@@ -51,6 +42,10 @@ print(f"idx_val device: {idx_val.device}")
 print(f"idx_test device: {idx_test.device}")
 
 # step6：输出
-output = model(features, adj)
-_, predicted = torch.max(output, dim=1)  # 获取预测结果
-print(predicted)
+with torch.no_grad():
+    # 关闭梯度计算
+    output = model(features, adj)
+    # 获取 output 中每一行（每个样本）的最大值及其索引，这里的索引就是模型预测的类别
+    _, predicted = torch.max(output, dim=1)
+
+    print(predicted)

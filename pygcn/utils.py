@@ -143,9 +143,7 @@ def sparse_mx_to_torch_sparse_tensor(sparse_mx):
         np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64)
     )
     values = torch.from_numpy(sparse_mx.data)
-    print(sparse_mx.shape)
     shape = torch.Size(sparse_mx.shape)
-    print(sparse_mx.shape)
 
     # 输出：PyTorch 稀疏张量
     # return torch.sparse.FloatTensor(indices, values, shape)

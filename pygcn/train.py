@@ -8,7 +8,11 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+import pytz
 
+print("pytz version:", pytz.__version__)
+
+from datetime import datetime
 from pygcn.utils import load_data, accuracy
 from pygcn.models import GCN
 
@@ -50,12 +54,12 @@ print(f"Using device: {device}")
 np.random.seed(args.seed)
 torch.manual_seed(args.seed)
 # 如果使用 GPU，还需要用 torch.cuda.manual_seed() 来固定 GPU 的随机性
-if args.cuda:
-    print(args.cuda)
+# if args.cuda:
+#     torch.cuda.manual_seed(args.seed)
+if device.type == "cuda":
     torch.cuda.manual_seed(args.seed)
 
 # step2：Load data
-# ? idx是指每个节点的索引吗？就是每一篇文献？
 adj, features, labels, idx_train, idx_val, idx_test = load_data()
 
 # step3：Model and optimizer
@@ -71,16 +75,15 @@ model = GCN(
 optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
 # 将模型和数据迁移到 GPU 上运行，以加速训练和推理过程
-print(args.cuda)
 if args.cuda:
     print("Migrate the model and data to run on the GPU...")
-    model.cuda()
-    features = features.cuda()
-    adj = adj.cuda()
-    labels = labels.cuda()
-    idx_train = idx_train.cuda()
-    idx_val = idx_val.cuda()
-    idx_test = idx_test.cuda()
+    model = model.to(device)
+    features = features.to(device)
+    adj = adj.to(device)
+    labels = labels.to(device)
+    idx_train = idx_train.to(device)
+    idx_val = idx_val.to(device)
+    idx_test = idx_test.to(device)
     print("Migration is over!")
 
 print(f"Model device: {next(model.parameters()).device}")
@@ -152,9 +155,16 @@ t_total = time.time()
 for epoch in range(args.epochs):
     train(epoch)
 
-# step6：保存模型（在训练完成后保存）👇
+# step6：根据时间戳，保存模型（在训练完成后保存）👇
+# 使用 pytz 获取当前时间，并指定时区
+tz = pytz.timezone("Asia/Shanghai")  # 例如：北京时间
+local_time = datetime.now(tz)
+print("Current local time:", local_time.strftime("%Y-%m-%d %H:%M:%S"))
+timestamp = local_time.strftime("%Y%m%d-%H%M%S")  # 格式化为：20241222-103500
 # 保存模型（包括模型的结构和参数）
-torch.save(model, "../checkpoints/model.pt")
+save_path = f"../checkpoints/model_{timestamp}.pt"
+torch.save(model, save_path)
+print(f"Model saved to {save_path}")
 # 或者只保存模型的参数（权重）
 # torch.save(model.state_dict(), f"gcn_model_epoch_{epoch+1}.pth")
 
